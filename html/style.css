@@ -1,0 +1,21 @@
+body {
+    padding-top: 6rem;
+    padding-bottom: 3rem;
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+}
+
+img.pokeball {
+    width: 200px;
+    display: block;
+    margin: 0 auto;
+}
+
+button#start {
+    display: block;
+    margin: 0 auto;
+    margin-top: 4rem;
+}

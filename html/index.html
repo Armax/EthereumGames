@@ -1,0 +1,158 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.36/dist/web3.min.js" integrity="sha256-nWBTbvxhJgjslRyuAKJHK+XcZPlCnmIAAMixz6EefVk=" crossorigin="anonymous"></script>
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+		<link href="style.css" rel="stylesheet">
+    </head>
+<body>
+    <div id="status"></div>
+    <header>
+        <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+            <a class="navbar-brand" href="/">Codemotion Demo</a>
+        </nav>
+    </header>
+    <main role="main">
+        <div class="container-fluid">
+            <div id="starter">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <img src="pokeball.png" class="pokeball" />
+                    </div>
+                    <div class="col-sm-4">
+                        <img src="pokeball.png" class="pokeball" />
+                    </div>
+                    <div class="col-sm-4">
+                        <img src="pokeball.png" class="pokeball" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12"><br>
+                        <input type="text" id="name" class="form-control" placeholder="Name" />
+                        <button id="start" class="btn btn-lg btn-primary">Starter</button>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="pokemonList">
+                
+            </div>
+        </div>
+    </main>
+</body>
+
+<script type="text/javascript">
+    const address = '';
+    const abi = [{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"pokemonOwner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"renounceOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"pokemons","outputs":[{"name":"name","type":"string"},{"name":"dna","type":"uint256"},{"name":"level","type":"uint32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"isOwner","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"pokemonId","type":"uint256"},{"indexed":false,"name":"name","type":"string"},{"indexed":false,"name":"dna","type":"uint256"}],"name":"NewPokemon","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_from","type":"address"},{"indexed":true,"name":"_to","type":"address"},{"indexed":true,"name":"_tokenId","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_owner","type":"address"},{"indexed":true,"name":"_approved","type":"address"},{"indexed":true,"name":"_tokenId","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"constant":true,"inputs":[{"name":"index","type":"uint256"}],"name":"getPokemon","outputs":[{"components":[{"name":"name","type":"string"},{"name":"dna","type":"uint256"},{"name":"level","type":"uint32"}],"name":"","type":"tuple"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"string"}],"name":"getStarter","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_user","type":"address"}],"name":"getUserPokemons","outputs":[{"name":"","type":"uint256[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"_tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_tokenId","type":"uint256"}],"name":"transfer","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_approved","type":"address"},{"name":"_tokenId","type":"uint256"}],"name":"approve","outputs":[],"payable":true,"stateMutability":"payable","type":"function"}]
+
+    var PokemonSpawner;
+    var userAccount;
+
+    $( "#start" ).click(function() {
+        var name = document.getElementById('name').value
+        getStarter(name);
+    });
+
+    function getIDFromDna(dna) {
+        return dna % 1000;
+    }
+
+    function startApp() {
+        PokemonSpawner = new web3.eth.Contract(abi, address);
+
+        var accountInterval = setInterval(function() {
+            web3.eth.getAccounts().then(function(accounts) {
+                var account = accounts[0];
+
+                if (account !== userAccount) {
+                    userAccount = account;
+                    getUserPokemons(userAccount).then(displayPokemons);
+                }
+            })
+        }, 100);
+    }
+
+    function displayPokemons(ids) {
+        if(ids.length > 0) {
+            $("#starter").remove();
+        }
+        $("#pokemonList").empty();
+        ids.forEach(function(id) {
+            getPokemonDetails(id).then(function(pokemon) {
+                $("#pokemonList").append(`<div class="col-sm-2 col-xs-12">
+                    <div class="card sm-2 shadow-sm">
+                        <img class="card-img-top" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${getIDFromDna(pokemon.dna)}.png" />
+                        <div class="card-body">
+                            <ul>
+                                <li><strong>ID</strong>: ${id}</li>
+                                <li><strong>Name</strong>: ${pokemon.name}</li>
+                                <li><strong>DNA</strong>: ${pokemon.dna}</li>
+                                <li><strong>Level</strong>: ${pokemon.level}</li>
+                            </ul>
+                            <input type="text" id="input-${id}" class="form-control" placeholder="Address" />
+                            <br />
+                            <button class="btn btn-danger btn-block transfer-to" id="${id}">Transfer</button>
+                        </div>
+                    </div>
+                </div>`);
+            });
+        });
+    }
+
+    $('body').on('click', '.transfer-to', function(e) {
+        const id = e.target.id;
+        const input = document.getElementById(`input-${id}`);
+        const address = input.value;
+
+        transfer(address, id);
+    })
+    
+    function getUserPokemons(owner) {
+        return PokemonSpawner.methods.getUserPokemons(owner).call()
+    }
+
+    function getPokemonDetails(id) {
+        return PokemonSpawner.methods.getPokemon(id).call()
+    }
+    
+    function getStarter(name) {
+        $("#status").text("Transaction sent!");
+
+        return PokemonSpawner.methods.getStarter(name)
+        .send({ from: userAccount })
+        .on("receipt", function(receipt) {
+            $("#status").text("Successfully created " + name + "!");
+            getUserPokemons(userAccount).then(displayPokemons);
+        })
+        .on("error", function(error) {
+            $("#status").text(error);
+        });
+    }
+
+    function transfer(address, id) {
+        $("#status").text("Transaction sent!");
+
+        return PokemonSpawner.methods.transfer(address, id)
+        .send({ from: userAccount })
+        .on("receipt", function(receipt) {
+            $("#status").text("Transferred " + id + "!");
+        })
+        .on("error", function(error) {
+            $("#status").text(error);
+        });
+    }
+
+    window.addEventListener('load', function() {
+        if (typeof web3 !== 'undefined') {
+            console.log('using metamask')
+            web3 = new Web3(web3.currentProvider);
+        } else {
+            console.log('using local provider')
+            web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
+        }
+
+        startApp()
+    })
+</script>
+</html>
